@@ -20,7 +20,9 @@ require 'generator.php';
 $api_schema = 'schema.json';
 $generator  = new DocGenerator($api_schema);
 
-echo $generator->compile();
+$output = $generator->compile();
+
+file_put_contents($api_schema.'.md', $ouput);
 
 ?>
 ```
