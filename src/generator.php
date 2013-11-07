@@ -4,15 +4,15 @@
 class DocGenerator
 {
 
-    public $api_prefix;
-    public $data_file;
-    public $data;
+    public  $api_prefix;
+    public  $data_file;
+    public  $data;
+    private $api_key;
 
 
-    public function __construct($schema_file) {
-        $this->api_prefix = 'http://api.uwaterloo.ca/public';
-        $this->data_file = $schema_file;
-        $this->load_data();
+    public function __construct($key) {
+        $this->api_prefix = 'https://api.uwaterloo.ca/v2';
+        $this->api_key    = $key;
     }
 
 
@@ -53,6 +53,7 @@ class DocGenerator
     public function make_notes() {
         $out  = $this->_h(3, 'Notes');
         $out .= $this->_list($this->data->additional_notes);
+        $out .= $this->_list(array('Any value can be `null`'));
         $out .= $this->_n();
 
         return $out;
@@ -112,25 +113,24 @@ class DocGenerator
         $data = ($arr) ? $arr : $this->data->response_fields;
 
         foreach($data as $i) {
-            $child = $i->children;
-            if($child) {
-                $out .= $this->_row($i->field, $i->type, $i->description."<br>".$this->make_response($child, $depth+1));
+            if(isset($i->children)) {
+                $out .= $this->_row($i->field, $i->type, $i->description."<br>".$this->make_response($i->children, $depth+1));
             } else {
                 $out .= $this->_row($i->field, $i->type, ($depth > 4) ? null : $i->description);
             }
         }
 
         $out .= "</table>\n";
-        $out .= (!$arr) ? $this->_n() : '';
 
         return $out;
     }
 
 
     public function make_output() {
-        $out  = $this->_h(1, 'Output');
+        $out  = $this->_n().'Any value can be `null`'.$this->_n();
+        $out .= $this->_h(2, 'Output');
         $out .= $this->_h(4, 'JSON')."```json\n";
-        $out .= file_get_contents($this->data->request_examples[0]);
+        $out .= file_get_contents($this->data->request_examples[0].'?key='.$this->api_key);
         $out .= "\n```".$this->_n();
 
         return $out;
@@ -147,7 +147,11 @@ class DocGenerator
     }
 
 
-    public function compile() {
+    public function compile($json_schema) {
+        
+        $this->data_file = $json_schema;
+        $this->load_data();
+
         $md  = '';
         $md .= $this->make_header();
         $md .= $this->make_call();
@@ -221,13 +225,6 @@ class DocGenerator
     }
 
 }
-
-
-
-$schema = 'schema.json';
-$generator = new DocGenerator($schema);
-
-print_r($generator->compile());
 
 
 ?>
